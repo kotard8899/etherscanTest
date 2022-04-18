@@ -1,5 +1,5 @@
 const keccak256 = require('keccak256')
-const whitelist = require('./whitelist_2')
+const whitelist = require('./whitelist')
 
 const plantTree = (whitelist) => {
   const leaves = whitelist.map(x => keccak256(x).toString('hex'))
@@ -53,9 +53,10 @@ const getRoot = (tree) => '0x' + tree[tree.length -1][0]
 
 const init = () => {
   const tree = plantTree(whitelist)
-  const proof = getProof(whitelist, tree, "0x64568ACE195D79423a4836e84BabE4470c2C2067")
+  const proof = getProof(whitelist, tree, "7519")
   const root = getRoot(tree)
   console.log(root)
 }
 
 init()
+
