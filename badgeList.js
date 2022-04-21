@@ -24,7 +24,7 @@ const bscContracts = {
   lootTokenAddress: "0x14a9a94e555fdd54c21d7f7e328e61d7ebece54b",
 }
 
-const ABI = {
+const eventABI = {
   "anonymous": false,
   "inputs": [
     {
@@ -57,12 +57,14 @@ const ABI = {
 }
 
 ;(async function() {
-  const chain = "bsc"
+  const chain = "eth"
   const contracts = chain === "eth" ? ethContracts : bscContracts
   await Moralis.start({ serverUrl, appId, masterKey })
   await getLootList(chain, contracts)
+  console.log( plist.length, glist.length )
   await getLPList(chain, contracts)
-  console.log({ plist, glist})
+  console.log( plist.length, glist.length )
+  console.log({ plist, glist })
 }())
 
 // calculate loot
@@ -73,7 +75,7 @@ const getLootList = async (chain, contracts) => {
     from_block: 14067452,
     topic: "0x34194be2f096bdb2ad418add902a4da76d3d6f6d387d86d857f56c7711ecca70",
     address: stakedLoot,
-    abi: ABI
+    abi: eventABI
   }
   
   const r = await Moralis.Web3API.native.getContractEvents(param) // get event logs
@@ -97,8 +99,8 @@ const getLootList = async (chain, contracts) => {
 
   rArr.forEach(i => {
     const { amount, receiver } = i
-    if ((amount >= 1000 || amount * 1.5 >= 1000)) { // if loot staked amount > 1000 || total staked value > $1000
-      if (amount >= 10000 || amount * 1.5 >= 10000) {
+    if ((amount >= 1000)) { // if loot staked amount > 1000 
+      if (amount >= 10000) {
         plist.push(receiver) // purple
       } else {
         glist.push(receiver) // gold
@@ -107,15 +109,24 @@ const getLootList = async (chain, contracts) => {
   })
 }
 
-// calculate loot:eth / loot:busd LP
+/* calculate loot:eth / loot:busd LP
+ * LP的usd價值 = lootEthLP.getReserves() / lootEthLP.totalSupply() * account.stakedAmount
+ * 從Deposited Event拿到LP的staked amount之後， 去算這個LP池的總價值（getReserves），
+ * 然後除以總發行量（totalSupply），去拿到 valuePerAmount，再乘上該 account 的 stakedAmount 即可
+ * 
+ * 補充：getReserves[0]會是池裡LOOT的量，getReserves[1]會是ETH || BUSD（看哪條鏈），
+ * 所以 LP 池的總價值 = getReserves[0] * LootPrice + getReserves[1] * EthPrice
+*/
+
 const getLPList = async (chain, contracts) => {
   const { SLP, LPAddress, wTokenAddress, lootTokenAddress } = contracts
+
   const param = {
     chain,
     from_block: 14067452,
     topic: "0x34194be2f096bdb2ad418add902a4da76d3d6f6d387d86d857f56c7711ecca70",
     address: SLP,
-    abi: ABI
+    abi: eventABI
   }
 
   const r = await Moralis.Web3API.native.getContractEvents(param)
